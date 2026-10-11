@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cotizador de levantamientos fotogramétricos lineales</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F2F5F6; --surface:#FFFFFF; --ink:#10242E; --muted:#576B75; --line:#D2DCE1;
+  --accent:#0F6E7A; --accent-soft:#E3F1F3; --signal:#C2410C; --on-signal:#FFFFFF; --field:#FFFFFF;
+  --warn:#9A3412;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Barlow",Arial,Helvetica,sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B1A21; --surface:#12262F; --ink:#E6EEF1; --muted:#93A8B2; --line:#25414D;
+    --accent:#4FB6C4; --accent-soft:#16333C; --signal:#FF8A4C; --on-signal:#10242E; --field:#0E202A; --warn:#FDBA74;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B1A21; --surface:#12262F; --ink:#E6EEF1; --muted:#93A8B2; --line:#25414D;
+  --accent:#4FB6C4; --accent-soft:#16333C; --signal:#FF8A4C; --on-signal:#10242E; --field:#0E202A; --warn:#FDBA74;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 16px 96px}
+header.top{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between;margin-bottom:18px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(30px,5vw,44px);line-height:1;margin:0;letter-spacing:.2px}
+.sub{margin:6px 0 0;color:var(--muted)}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:9px 14px;cursor:pointer;font-weight:500}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--signal);border-color:var(--signal);color:var(--on-signal);font-weight:600}
+.btn.primary:hover{filter:brightness(1.07)}
+nav.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:20px;overflow-x:auto}
+nav.tabs button{background:none;border:0;border-bottom:3px solid transparent;padding:10px 16px;cursor:pointer;font-weight:500;color:var(--muted);white-space:nowrap}
+nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--signal);font-weight:600}
+.grid{display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:18px}
+.panel+.panel{margin-top:16px}
+.panel h2{font-family:var(--display);font-size:22px;font-weight:600;margin:0 0 12px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.field label,.lbl{font-size:13px;color:var(--muted);font-weight:500}
+.field input,.field select,.field textarea,.cell-in{background:var(--field);border:1px solid var(--line);border-radius:6px;padding:9px 10px;width:100%;min-width:0}
+.field input:focus,.field select:focus,.field textarea:focus,.cell-in:focus{border-color:var(--accent)}
+.suffix{position:relative}
+.suffix input{padding-right:52px}
+.suffix span{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px;pointer-events:none}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chip{border:1px solid var(--line);background:var(--field);border-radius:999px;padding:3px 11px;font-size:14px;cursor:pointer}
+.chip:hover,.chip.on{background:var(--accent-soft);border-color:var(--accent)}
+.adds{list-style:none;margin:0;padding:0}
+.adds li{border-top:1px solid var(--line)}
+.adds li:first-child{border-top:0}
+.adds label{display:flex;gap:10px;align-items:flex-start;padding:9px 0;cursor:pointer}
+.adds input{margin-top:4px;width:18px;height:18px;accent-color:var(--accent);flex:none}
+.adds .nm{display:block;font-weight:500}
+.adds .pr{display:block;font-size:13px;color:var(--muted)}
+.sheet{background:var(--surface);border:1px solid var(--line);border-top:5px solid var(--signal);border-radius:4px;padding:28px 28px 24px}
+.sh-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px;margin-bottom:20px}
+.sh-head h2{font-family:var(--display);font-weight:700;font-size:30px;line-height:1.05;margin:0}
+.sh-meta{text-align:right;font-size:14px;color:var(--muted)}
+.sh-meta strong{color:var(--ink);font-family:var(--display);font-size:22px;font-weight:600;display:block}
+.sh-prov{margin:2px 0 0;font-size:14px;color:var(--muted)}
+.sh-cli{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 24px;padding:14px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-bottom:18px;font-size:15px}
+.sh-cli div span{color:var(--muted);font-size:13px;display:block}
+.sh-cli b{font-weight:500}
+table.q{width:100%;border-collapse:collapse;font-size:15px}
+table.q th{font-weight:500;font-size:13px;color:var(--muted);text-align:left;padding:6px 8px;border-bottom:2px solid var(--ink)}
+table.q td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+table.q .n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+table.q .d{display:block;color:var(--muted);font-size:13px}
+.tot{margin:16px 0 0 auto;max-width:360px}
+.tot div{display:flex;justify-content:space-between;gap:16px;padding:5px 0;font-variant-numeric:tabular-nums}
+.tot .grand{border-top:2px solid var(--ink);margin-top:6px;padding-top:10px;align-items:baseline}
+.tot .grand b{font-family:var(--display);font-size:42px;font-weight:700;line-height:1;color:var(--signal)}
+.tot .grand span{font-family:var(--display);font-size:20px;font-weight:600}
+.tot .soft{color:var(--muted);font-size:14px}
+.facts{display:flex;flex-wrap:wrap;gap:8px 28px;margin-top:18px;padding:12px 14px;background:var(--accent-soft);border-radius:6px;font-size:14px}
+.facts b{font-weight:600}
+.cond{margin-top:20px;font-size:13px;color:var(--muted)}
+.cond h3{font-family:var(--display);font-size:18px;color:var(--ink);margin:0 0 6px;font-weight:600}
+.cond ol{margin:0;padding-left:20px}
+.cond li{margin-bottom:3px}
+.firma{margin-top:34px;display:flex;gap:40px;font-size:13px;color:var(--muted)}
+.firma div{flex:1;border-top:1px solid var(--ink);padding-top:6px}
+.empty{padding:40px 12px;text-align:center;color:var(--muted)}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{font-size:13px;color:var(--muted);font-weight:500;text-align:left;padding:4px 6px 6px}
+.tbl td{padding:4px 6px}
+.tbl td.ro{color:var(--muted);white-space:nowrap}
+.scroll{overflow-x:auto}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:16px}
+.two>div>.panel+.panel{margin-top:16px}
+@media (max-width:900px){.two{grid-template-columns:minmax(0,1fr)}}
+.hint{font-size:13px;color:var(--muted);margin:0 0 12px}
+.warn{color:var(--warn);font-size:14px;margin:8px 0 0}
+.barcell{min-width:120px}
+.bar{height:10px;background:var(--accent);border-radius:2px;min-width:2px}
+.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+#bar{display:none}
+@media (max-width:900px){
+  #bar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:5;align-items:center;justify-content:space-between;gap:12px;
+    background:var(--surface);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px))}
+  #bar .t{font-family:var(--display);font-size:28px;font-weight:700;color:var(--signal);line-height:1}
+  #bar small{display:block;color:var(--muted);font-size:12px}
+}
+@media (max-width:560px){
+  .sheet{padding:18px 14px}
+  .sh-meta{text-align:left}
+  .sh-cli{grid-template-columns:minmax(0,1fr)}
+  .row{grid-template-columns:minmax(0,1fr)}
+}
+@media print{
+  :root{--bg:#fff;--surface:#fff;--ink:#10242E;--muted:#4b5b64;--line:#c9d3d8;--accent:#0F6E7A;--accent-soft:#E3F1F3;--signal:#C2410C;padding:0}
+  body{background:#fff}
+  .wrap{padding:0;max-width:none}
+  header.top,nav.tabs,#form,#bar,#view-ajustes,#view-tabulador{display:none!important}
+  .grid{display:block}
+  .sheet{border:0;border-top:5px solid var(--signal);padding:0}
+  #view-cotizador{display:block!important}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Cotizador de levantamientos fotogramétricos lineales</h1>
+      <p class="sub">Caminos, costa, ductos, canales y líneas de transmisión. Precios por kilómetro en pesos mexicanos (MXN).</p>
+    </div>
+    <div class="actions">
+      <button class="btn" id="btn-new" type="button">Nueva cotización</button>
+      <button class="btn primary" id="btn-print" type="button">Imprimir o guardar PDF</button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Secciones">
+    <button role="tab" id="tab-cotizador" aria-selected="true" aria-controls="view-cotizador" data-view="cotizador">Cotización</button>
+    <button role="tab" id="tab-tabulador" aria-selected="false" aria-controls="view-tabulador" data-view="tabulador">Tabulador por longitud</button>
+    <button role="tab" id="tab-ajustes" aria-selected="false" aria-controls="view-ajustes" data-view="ajustes">Tarifas y ajustes</button>
+  </nav>
+
+  <section id="view-cotizador" role="tabpanel" aria-labelledby="tab-cotizador">
+    <div class="grid">
+      <div id="form"></div>
+      <div><article class="sheet" id="sheet" aria-live="polite"></article></div>
+    </div>
+  </section>
+
+  <section id="view-tabulador" role="tabpanel" aria-labelledby="tab-tabulador" hidden>
+    <div class="panel">
+      <h2>Precio base según longitud</h2>
+      <p class="hint">Precio antes de los ajustes por franja, trazo y resolución, y sin puntos de control, traslado ni entregables adicionales. Los días de campo usan la segunda opción de franja. Cambia las longitudes para ver otros tamaños.</p>
+      <div class="scroll">
+        <table class="tbl" id="tab-table">
+          <thead><tr><th>Longitud (km)</th><th class="num">Levantamiento</th><th class="num">Por km</th><th>Comparación por km</th><th class="num">Días de campo</th><th class="num">IVA</th><th class="num">Total con IVA</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-ajustes" role="tabpanel" aria-labelledby="tab-ajustes" hidden>
+    <div id="ajustes"></div>
+  </section>
+</div>
+
+<div id="bar">
+  <div><small>Total con IVA</small><span class="t" id="bar-total">$0.00</span></div>
+  <button class="btn primary" type="button" id="bar-go">Ver cotización</button>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+var $ = function(s, el){ return (el||document).querySelector(s); };
+var $$ = function(s, el){ return Array.prototype.slice.call((el||document).querySelectorAll(s)); };
+var money = new Intl.NumberFormat("es-MX",{style:"currency",currency:"MXN"});
+var fmt = function(n){ return money.format(isFinite(n)?n:0); };
+var num = new Intl.NumberFormat("es-MX",{maximumFractionDigits:2});
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
+function pad(n){ return (n<10?"0":"")+n; }
+function isoToday(){ var d=new Date(); return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+function dmy(iso){ var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||""); return m? m[3]+"/"+m[2]+"/"+m[1] : "—"; }
+function addDays(iso, n){ var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||""); if(!m) return ""; var d=new Date(+m[1],+m[2]-1,+m[3]+n); return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+function clone(o){ return JSON.parse(JSON.stringify(o)); }
+function store(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){} }
+function recall(key){ try{ var v=localStorage.getItem(key); return v? JSON.parse(v): null; }catch(e){ return null; } }
+
+/* ---------- valores de referencia ---------- */
+var DEFAULT_A = {
+  prov:{ nombre:"", rfc:"", contacto:"" },
+  p:{ minimo:6000, iva:16, prodProc:10, diasMinProc:2, kmTarifa:12, viatico:1500, gcp:600, gcpKm:2, anticipo:50, vigencia:15 },
+  tiers:[{d:0,r:9000},{d:1,r:6500},{d:5,r:4500},{d:20,r:3200},{d:50,r:2400},{d:100,r:1800}],
+  franja:[
+    {n:"Franja angosta (hasta 50 m)", f:0.9, w:50, prod:12, desc:"Un solo pase; caminos, ductos y brechas"},
+    {n:"Franja media (50–150 m)", f:1, w:100, prod:6, desc:"Franja estándar para corredores"},
+    {n:"Franja ancha (150–300 m)", f:1.3, w:250, prod:3, desc:"Varios pases paralelos; costa y cauces"}
+  ],
+  terr:[
+    {n:"Recto y despejado", f:1, desc:"Trazo sin obstáculos relevantes"},
+    {n:"Sinuoso", f:1.15, desc:"Costa o cauces con curvas, vegetación media o accesos limitados"},
+    {n:"Complejo", f:1.3, desc:"Zona urbana, líneas eléctricas, relieve fuerte o espacio aéreo restringido"}
+  ],
+  gsd:[
+    {n:"Estándar (3–5 cm/px)", f:1, desc:"Ortomosaico y modelos de uso general"},
+    {n:"Alta (1.5–3 cm/px)", f:1.25, desc:"Más fotos, más vuelo y más procesamiento"},
+    {n:"Muy alta (< 1.5 cm/px)", f:1.5, desc:"Vuelos bajos y procesamiento intensivo"}
+  ],
+  adds:[
+    {n:"Perfil longitudinal y secciones transversales", t:"Por km", p:1500, d:"Intervalo de secciones a definir con el cliente"},
+    {n:"Curvas de nivel", t:"Por km", p:900, d:"Equidistancia a definir con el cliente"},
+    {n:"Nube de puntos clasificada", t:"Por km", p:400, d:"Terreno, vegetación y construcciones"},
+    {n:"Vectorización de elementos (ejes, bordes, estructuras)", t:"Por km", p:1200, d:"Capas lineales y puntuales sobre el ortomosaico"},
+    {n:"Informe técnico del levantamiento", t:"Fijo", p:3000, d:"Metodología, precisión y resultados"},
+    {n:"Planos y capas SIG (SHP/GPKG/DXF)", t:"Fijo", p:3500, d:"Plano de entrega por tramos"},
+    {n:"Gestión de autorizaciones de vuelo (AFAC / zonas restringidas)", t:"Fijo", p:2500, d:"Trámite y coordinación previa al vuelo"},
+    {n:"Entrega urgente (≤ 72 h)", t:"Fijo", p:3000, d:"Prioridad de procesamiento"}
+  ],
+  sizes:[0.5,1,2,5,10,20,50,100,200],
+  cond:[
+    "Precios en pesos mexicanos (MXN). La cotización es válida hasta la fecha de vigencia indicada.",
+    "Incluye planeación y ejecución de vuelos, procesamiento fotogramétrico, ortomosaico georreferenciado (GeoTIFF), MDS y MDT de la franja cotizada.",
+    "La longitud se mide sobre el eje del trazo proporcionado por el cliente. Los anchos de franja mayores al indicado se cotizan por separado.",
+    "El anticipo se paga para programar el levantamiento; el saldo se liquida contra entrega de productos.",
+    "Los vuelos dependen de las condiciones meteorológicas (viento, lluvia, visibilidad); reprogramar por clima no genera cargo adicional.",
+    "La operación se realiza conforme a la normativa aplicable de aeronáutica civil para aeronaves pilotadas a distancia.",
+    "Los productos son de carácter técnico; si se requiere validez catastral o legal, deberá validarlos el profesional facultado.",
+    "Los cambios de alcance, longitud o entregables posteriores a la aceptación se cotizan por separado."
+  ].join("\n")
+};
+function newQuote(){
+  return { folio:"LIN-"+new Date().getFullYear()+"-001", fecha:isoToday(), cliente:"", contacto:"", proyecto:"", ubicacion:"",
+           len:10, bi:1, ti:0, gi:0, gcp:20, dist:40, desc:0, sel:DEFAULT_A.adds.map(function(){return false;}) };
+}
+
+var S = { a: clone(DEFAULT_A), q: newQuote() };
+(function hydrate(){
+  var a = recall("cotizadorLineal:ajustes"), q = recall("cotizadorLineal:cotizacion");
+  if(a && a.p && a.tiers && a.terr && a.gsd && a.adds && a.franja){
+    S.a = a;
+    if(!a.sizes) S.a.sizes = clone(DEFAULT_A.sizes);
+    if(!a.prov) S.a.prov = clone(DEFAULT_A.prov);
+    if(typeof a.cond !== "string") S.a.cond = DEFAULT_A.cond;
+    if(a.p.gcpKm==null) S.a.p.gcpKm = DEFAULT_A.p.gcpKm;
+  }
+  if(q && q.sel){ S.q = q; }
+  while(S.q.sel.length < S.a.adds.length) S.q.sel.push(false);
+  if(S.q.ti >= S.a.terr.length) S.q.ti = 0;
+  if(S.q.gi >= S.a.gsd.length) S.q.gi = 0;
+  if(S.q.bi >= S.a.franja.length) S.q.bi = 0;
+})();
+function persist(){ store("cotizadorLineal:ajustes", S.a); store("cotizadorLineal:cotizacion", S.q); }
+
+/* ---------- cálculo ---------- */
+function tiered(len){
+  var T=S.a.tiers, s=0;
+  for(var i=0;i<T.length;i++){
+    var d=+T[i].d||0, h = i<T.length-1 ? (+T[i+1].d||0) : Infinity;
+    s += Math.max(0, Math.min(len,h)-d) * (+T[i].r||0);
+  }
+  return s;
+}
+function days(len, bi){
+  var p=S.a.p, fr=S.a.franja[bi]||S.a.franja[0];
+  var campo = len>0 ? Math.max(1, Math.ceil(len/Math.max(0.01,+fr.prod||1))) : 0;
+  var proc = len>0 ? Math.max(+p.diasMinProc||0, Math.ceil(len/Math.max(0.01,+p.prodProc||1))) : 0;
+  return { campo:campo, plazo: len>0 ? campo+proc : 0 };
+}
+function gcpSug(len){ return len>0 ? Math.max(4, Math.ceil(len*(+S.a.p.gcpKm||0))) : 0; }
+function calc(q){
+  var p=S.a.p, len=Math.max(0,+q.len||0), fr=S.a.franja[q.bi]||S.a.franja[0], dd=days(len,q.bi);
+  var base = len>0 ? Math.max(tiered(len), +p.minimo||0) : 0;
+  var terr=S.a.terr[q.ti]||S.a.terr[0], gsd=S.a.gsd[q.gi]||S.a.gsd[0];
+  var lines=[];
+  if(len>0){
+    lines.push({c:"Levantamiento fotogramétrico lineal", d:"Ortomosaico georreferenciado, MDS y MDT de la franja", q:num.format(len)+" km", pu:base/len, imp:base});
+    var aF=base*((+fr.f||1)-1), aT=base*((+terr.f||1)-1), aG=base*((+gsd.f||1)-1);
+    if(aF) lines.push({c:"Ajuste por franja: "+fr.n, d:"", q:"× "+num.format(fr.f), pu:null, imp:aF});
+    if(aT) lines.push({c:"Ajuste por trazo: "+terr.n, d:"", q:"× "+num.format(terr.f), pu:null, imp:aT});
+    if(aG) lines.push({c:"Ajuste por resolución: "+gsd.n, d:"", q:"× "+num.format(gsd.f), pu:null, imp:aG});
+    var g=Math.max(0,+q.gcp||0); if(g>0) lines.push({c:"Puntos de control terrestre (GCP)", d:"Colocación y medición con GNSS", q:g+" pza", pu:+p.gcp||0, imp:g*(+p.gcp||0)});
+    var dist=Math.max(0,+q.dist||0); if(dist>0&&(+p.kmTarifa)) lines.push({c:"Traslado", d:"Kilómetros totales ida y vuelta", q:num.format(dist)+" km", pu:+p.kmTarifa, imp:dist*p.kmTarifa});
+    if(dd.campo>0&&(+p.viatico)) lines.push({c:"Viáticos de campo", d:"Según días de campo estimados", q:dd.campo+" día"+(dd.campo>1?"s":""), pu:+p.viatico, imp:dd.campo*p.viatico});
+    S.a.adds.forEach(function(x,i){
+      if(q.sel[i]){
+        var porKm = x.t==="Por km";
+        lines.push({c:x.n, d:x.d||"", q: porKm? num.format(len)+" km":"1 servicio", pu:+x.p||0, imp: porKm? (+x.p||0)*len : (+x.p||0)});
+      }
+    });
+  }
+  var bruto=lines.reduce(function(s,l){return s+l.imp;},0);
+  var descP=Math.min(100,Math.max(0,+q.desc||0));
+  var descuento=bruto*descP/100, sub=bruto-descuento, iva=sub*(+p.iva||0)/100, total=sub+iva, anticipo=total*(+p.anticipo||0)/100;
+  return {len:len, lines:lines, bruto:bruto, descP:descP, descuento:descuento, sub:sub, iva:iva, total:total, anticipo:anticipo, saldo:total-anticipo,
+          porKm: len>0? sub/len:0, campo:dd.campo, plazo:dd.plazo, fr:fr, area: len*(+fr.w||0)/10};
+}
+
+/* ---------- formulario ---------- */
+function opts(arr, sel){
+  return arr.map(function(t,i){return '<option value="'+i+'"'+(i===sel?" selected":"")+'>'+esc(t.n)+' (× '+num.format(t.f)+')</option>';}).join("");
+}
+function renderForm(){
+  var q=S.q, a=S.a;
+  var chips=[1,5,10,25,50,100].map(function(n){return '<button type="button" class="chip" data-len="'+n+'">'+n+' km</button>';}).join("");
+  var adds=a.adds.map(function(x,i){
+    return '<li><label><input type="checkbox" data-bind="q.sel.'+i+'" data-type="bool"'+(q.sel[i]?" checked":"")+'>'+
+      '<span><span class="nm">'+esc(x.n)+'</span><span class="pr">'+fmt(x.p)+(x.t==="Por km"?" por km":"")+(x.d?" · "+esc(x.d):"")+'</span></span></label></li>';
+  }).join("");
+  $("#form").innerHTML =
+  '<div class="panel"><h2>Datos de la cotización</h2>'+
+    '<div class="row"><div class="field"><label for="f-folio">Folio</label><input id="f-folio" data-bind="q.folio" value="'+esc(q.folio)+'"></div>'+
+    '<div class="field"><label for="f-fecha">Fecha de emisión</label><input id="f-fecha" type="date" data-bind="q.fecha" value="'+esc(q.fecha)+'"></div></div>'+
+    '<div class="field"><label for="f-cliente">Cliente</label><input id="f-cliente" data-bind="q.cliente" placeholder="Nombre o razón social" value="'+esc(q.cliente)+'"></div>'+
+    '<div class="field"><label for="f-contacto">Contacto</label><input id="f-contacto" data-bind="q.contacto" placeholder="Nombre, teléfono o correo" value="'+esc(q.contacto)+'"></div>'+
+    '<div class="field"><label for="f-proyecto">Proyecto o trazo</label><input id="f-proyecto" data-bind="q.proyecto" placeholder="Ej. Camino de acceso, tramo costero, ducto" value="'+esc(q.proyecto)+'"></div>'+
+    '<div class="field" style="margin-bottom:0"><label for="f-ubic">Ubicación</label><input id="f-ubic" data-bind="q.ubicacion" placeholder="Localidad, municipio" value="'+esc(q.ubicacion)+'"></div>'+
+  '</div>'+
+  '<div class="panel"><h2>Levantamiento</h2>'+
+    '<div class="field"><label for="f-len">Longitud del trazo</label><div class="suffix"><input id="f-len" type="number" inputmode="decimal" min="0" step="any" data-bind="q.len" data-type="number" value="'+esc(q.len)+'"><span>km</span></div><div class="chips">'+chips+'</div></div>'+
+    '<div class="field"><label for="f-bi">Ancho de franja</label><select id="f-bi" data-bind="q.bi" data-type="int">'+opts(a.franja,q.bi)+'</select></div>'+
+    '<div class="field"><label for="f-terr">Tipo de trazo</label><select id="f-terr" data-bind="q.ti" data-type="int">'+opts(a.terr,q.ti)+'</select></div>'+
+    '<div class="field"><label for="f-gsd">Resolución (GSD)</label><select id="f-gsd" data-bind="q.gi" data-type="int">'+opts(a.gsd,q.gi)+'</select></div>'+
+    '<div class="field"><label for="f-gcp">Puntos de control (GCP)</label><input id="f-gcp" type="number" inputmode="numeric" min="0" step="1" data-bind="q.gcp" data-type="number" value="'+esc(q.gcp)+'"><div class="chips"><button type="button" class="chip" id="gcp-use">Usar sugerido</button></div></div>'+
+    '<div class="row"><div class="field" style="margin-bottom:0"><label for="f-dist">Distancia ida y vuelta</label><div class="suffix"><input id="f-dist" type="number" inputmode="decimal" min="0" step="any" data-bind="q.dist" data-type="number" value="'+esc(q.dist)+'"><span>km</span></div></div>'+
+    '<div class="field" style="margin-bottom:0"><label for="f-desc">Descuento comercial</label><div class="suffix"><input id="f-desc" type="number" inputmode="decimal" min="0" max="100" step="any" data-bind="q.desc" data-type="number" value="'+esc(q.desc)+'"><span>%</span></div></div></div>'+
+  '</div>'+
+  '<div class="panel"><h2>Entregables adicionales</h2><ul class="adds">'+adds+'</ul></div>';
+  markChips();
+}
+function markChips(){
+  $$(".chip[data-len]").forEach(function(c){ c.classList.toggle("on", +c.dataset.len === +S.q.len); });
+  var b=$("#gcp-use"); if(b) b.textContent="Usar sugerido: "+gcpSug(Math.max(0,+S.q.len||0))+" ("+num.format(S.a.p.gcpKm)+" por km, mínimo 4)";
+}
+
+/* ---------- hoja ---------- */
+function renderSheet(){
+  var q=S.q, a=S.a, r=calc(q);
+  var prov=[a.prov.nombre, a.prov.rfc?("RFC "+a.prov.rfc):"", a.prov.contacto].filter(Boolean).join(" · ");
+  var vig = addDays(q.fecha, +a.p.vigencia||0);
+  var head =
+   '<div class="sh-head"><div><h2>Cotización de levantamiento fotogramétrico lineal con dron</h2>'+
+   '<p class="sh-prov">'+(prov?esc(prov):"Agrega tus datos de prestador en Tarifas y ajustes")+'</p></div>'+
+   '<div class="sh-meta"><strong>'+esc(q.folio||"Sin folio")+'</strong>Emitida el '+dmy(q.fecha)+'<br>Vigente hasta el '+dmy(vig)+'</div></div>'+
+   '<div class="sh-cli"><div><span>Cliente</span><b>'+(esc(q.cliente)||"—")+'</b></div><div><span>Contacto</span><b>'+(esc(q.contacto)||"—")+'</b></div>'+
+   '<div><span>Proyecto o trazo</span><b>'+(esc(q.proyecto)||"—")+'</b></div><div><span>Ubicación</span><b>'+(esc(q.ubicacion)||"—")+'</b></div></div>';
+  var body;
+  if(r.len<=0){
+    body='<div class="empty">Captura la longitud del trazo para ver el desglose.</div>';
+  } else {
+    var rows=r.lines.map(function(l){
+      return '<tr><td>'+esc(l.c)+(l.d?'<span class="d">'+esc(l.d)+'</span>':"")+'</td><td class="n">'+esc(l.q)+'</td><td class="n">'+(l.pu==null?"":fmt(l.pu))+'</td><td class="n">'+fmt(l.imp)+'</td></tr>';
+    }).join("");
+    body='<table class="q"><thead><tr><th>Concepto</th><th style="text-align:right">Cantidad</th><th style="text-align:right">P. unitario</th><th style="text-align:right">Importe</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+    '<div class="tot">'+
+      '<div><span>Subtotal bruto</span><span>'+fmt(r.bruto)+'</span></div>'+
+      (r.descuento>0?'<div><span>Descuento ('+num.format(r.descP)+'%)</span><span>−'+fmt(r.descuento)+'</span></div>':"")+
+      '<div><span>Subtotal</span><span>'+fmt(r.sub)+'</span></div>'+
+      '<div><span>IVA ('+num.format(a.p.iva)+'%)</span><span>'+fmt(r.iva)+'</span></div>'+
+      '<div class="grand"><span>Total MXN</span><b>'+fmt(r.total)+'</b></div>'+
+      '<div class="soft"><span>Anticipo ('+num.format(a.p.anticipo)+'%)</span><span>'+fmt(r.anticipo)+'</span></div>'+
+      '<div class="soft"><span>Saldo contra entrega</span><span>'+fmt(r.saldo)+'</span></div>'+
+    '</div>'+
+    '<div class="facts"><span>Precio efectivo: <b>'+fmt(r.porKm)+' por km</b> sin IVA</span>'+
+      '<span>Franja: <b>≈ '+num.format(r.fr.w)+' m</b> (≈ '+num.format(r.area)+' ha)</span>'+
+      '<span>Campo: <b>'+r.campo+' día'+(r.campo>1?"s":"")+'</b></span><span>Entrega estimada: <b>'+r.plazo+' días hábiles</b></span></div>';
+  }
+  var conds=String(a.cond||"").split("\n").map(function(s){return s.trim();}).filter(Boolean);
+  var cond = conds.length? '<div class="cond"><h3>Condiciones comerciales</h3><ol>'+conds.map(function(c){return "<li>"+esc(c)+"</li>";}).join("")+'</ol></div>':"";
+  var firma='<div class="firma"><div>Aceptación del cliente (nombre y firma)</div><div style="flex:0 0 140px">Fecha</div></div>';
+  $("#sheet").innerHTML = head+body+cond+firma;
+  $("#bar-total").textContent = fmt(r.total);
+}
+
+/* ---------- tabulador ---------- */
+function buildTab(){
+  $("#tab-table tbody").innerHTML = S.a.sizes.map(function(s,i){
+    return '<tr><td><input class="cell-in" style="max-width:110px" type="number" inputmode="decimal" min="0" step="any" aria-label="Longitud fila '+(i+1)+'" data-bind="a.sizes.'+i+'" data-type="number" value="'+esc(s)+'"></td>'+
+      '<td class="num" id="tb-b-'+i+'"></td><td class="num" id="tb-p-'+i+'"></td><td class="barcell"><div class="bar" id="tb-r-'+i+'"></div></td>'+
+      '<td class="num" id="tb-d-'+i+'"></td><td class="num" id="tb-i-'+i+'"></td><td class="num" id="tb-t-'+i+'"><b></b></td></tr>';
+  }).join("");
+}
+function updateTab(){
+  var bi = Math.min(1, S.a.franja.length-1);
+  var rows=S.a.sizes.map(function(s){
+    var len=Math.max(0,+s||0), base= len>0? Math.max(tiered(len), +S.a.p.minimo||0):0;
+    var iva=base*(+S.a.p.iva||0)/100;
+    return {base:base, pkm: len>0?base/len:0, dias:days(len,bi).campo, iva:iva, total:base+iva};
+  });
+  var max=Math.max.apply(null, rows.map(function(r){return r.pkm;}).concat([1]));
+  rows.forEach(function(r,i){
+    $("#tb-b-"+i).textContent=fmt(r.base); $("#tb-p-"+i).textContent=fmt(r.pkm);
+    $("#tb-r-"+i).style.width=Math.max(1,(r.pkm/max*100))+"%";
+    $("#tb-d-"+i).textContent=r.dias; $("#tb-i-"+i).textContent=fmt(r.iva); $("#tb-t-"+i).firstChild.textContent=fmt(r.total);
+  });
+}
+
+/* ---------- ajustes ---------- */
+function paramRow(k,label,suffix,step,hint){
+  return '<div class="field"><label for="p-'+k+'">'+label+'</label><div class="suffix"><input id="p-'+k+'" type="number" inputmode="decimal" step="'+step+'" min="0" data-bind="a.p.'+k+'" data-type="number" value="'+esc(S.a.p[k])+'"><span>'+suffix+'</span></div>'+(hint?'<span class="hint" style="margin:0">'+hint+'</span>':"")+'</div>';
+}
+function renderAjustes(){
+  var a=S.a;
+  var tiers=a.tiers.map(function(t,i){
+    return '<tr><td><input class="cell-in" type="number" step="any" min="0" aria-label="Tramo '+(i+1)+' desde" data-bind="a.tiers.'+i+'.d" data-type="number" value="'+esc(t.d)+'"></td>'+
+      '<td class="ro" id="hasta-'+i+'"></td>'+
+      '<td><input class="cell-in" type="number" step="any" min="0" aria-label="Tramo '+(i+1)+' tarifa por kilómetro" data-bind="a.tiers.'+i+'.r" data-type="number" value="'+esc(t.r)+'"></td></tr>';
+  }).join("");
+  function factorRows(arr,key){
+    return arr.map(function(t,i){
+      return '<tr><td><input class="cell-in" aria-label="Nombre" data-bind="a.'+key+'.'+i+'.n" value="'+esc(t.n)+'"></td>'+
+        '<td style="width:96px"><input class="cell-in" type="number" step="0.01" min="0" aria-label="Factor" data-bind="a.'+key+'.'+i+'.f" data-type="number" value="'+esc(t.f)+'"></td>'+
+        '<td><input class="cell-in" aria-label="Descripción" data-bind="a.'+key+'.'+i+'.desc" value="'+esc(t.desc)+'"></td></tr>';
+    }).join("");
+  }
+  var fr=a.franja.map(function(t,i){
+    return '<tr><td><input class="cell-in" aria-label="Nombre" data-bind="a.franja.'+i+'.n" value="'+esc(t.n)+'"></td>'+
+      '<td style="width:84px"><input class="cell-in" type="number" step="0.01" min="0" aria-label="Factor" data-bind="a.franja.'+i+'.f" data-type="number" value="'+esc(t.f)+'"></td>'+
+      '<td style="width:96px"><input class="cell-in" type="number" step="any" min="0" aria-label="Ancho nominal en metros" data-bind="a.franja.'+i+'.w" data-type="number" value="'+esc(t.w)+'"></td>'+
+      '<td style="width:96px"><input class="cell-in" type="number" step="any" min="0" aria-label="Kilómetros por día" data-bind="a.franja.'+i+'.prod" data-type="number" value="'+esc(t.prod)+'"></td>'+
+      '<td><input class="cell-in" aria-label="Descripción" data-bind="a.franja.'+i+'.desc" value="'+esc(t.desc)+'"></td></tr>';
+  }).join("");
+  var adds=a.adds.map(function(x,i){
+    return '<tr><td><input class="cell-in" aria-label="Concepto" data-bind="a.adds.'+i+'.n" value="'+esc(x.n)+'"></td>'+
+      '<td style="width:110px"><select class="cell-in" aria-label="Tipo de cobro" data-bind="a.adds.'+i+'.t"><option'+(x.t==="Fijo"?" selected":"")+'>Fijo</option><option'+(x.t==="Por km"?" selected":"")+'>Por km</option></select></td>'+
+      '<td style="width:130px"><input class="cell-in" type="number" step="any" min="0" aria-label="Precio" data-bind="a.adds.'+i+'.p" data-type="number" value="'+esc(x.p)+'"></td>'+
+      '<td><input class="cell-in" aria-label="Descripción" data-bind="a.adds.'+i+'.d" value="'+esc(x.d)+'"></td></tr>';
+  }).join("");
+  $("#ajustes").innerHTML =
+   '<p class="hint" style="font-size:14px">Los precios, factores y productividades son valores de referencia, no tarifas de mercado verificadas. Ajústalos a tus costos reales. Los cambios se guardan en este navegador.</p>'+
+   '<div class="two"><div>'+
+     '<div class="panel"><h2>Datos del prestador</h2>'+
+       '<div class="field"><label for="v-n">Nombre o razón social</label><input id="v-n" data-bind="a.prov.nombre" value="'+esc(a.prov.nombre)+'"></div>'+
+       '<div class="row"><div class="field"><label for="v-r">RFC</label><input id="v-r" data-bind="a.prov.rfc" value="'+esc(a.prov.rfc)+'"></div>'+
+       '<div class="field"><label for="v-c">Teléfono o correo</label><input id="v-c" data-bind="a.prov.contacto" value="'+esc(a.prov.contacto)+'"></div></div></div>'+
+     '<div class="panel"><h2>Parámetros generales</h2><div class="row">'+
+       paramRow("minimo","Mínimo por servicio","MXN","any","Se cobra si el cálculo por longitud resulta menor")+
+       paramRow("iva","IVA","%","any","")+
+       paramRow("prodProc","Productividad de procesamiento","km/día","any","Para el plazo de entrega")+
+       paramRow("diasMinProc","Días mínimos de procesamiento","días","1","")+
+       paramRow("kmTarifa","Tarifa de traslado","MXN/km","any","Sobre km totales ida y vuelta")+
+       paramRow("viatico","Viáticos por día de campo","MXN","any","Usa 0 si el sitio es local")+
+       paramRow("gcp","Costo por punto de control","MXN","any","Colocación y medición con GNSS")+
+       paramRow("gcpKm","Puntos de control sugeridos","por km","any","Se usa para la sugerencia (mínimo 4)")+
+       paramRow("anticipo","Anticipo","%","any","")+
+       paramRow("vigencia","Vigencia de la cotización","días","1","")+
+     '</div></div>'+
+   '</div><div>'+
+     '<div class="panel"><h2>Tarifa escalonada por longitud</h2><p class="hint">Cada tramo se cobra solo por los kilómetros que caen dentro de él, así el precio total nunca baja al pasar de un tramo a otro.</p>'+
+       '<table class="tbl"><thead><tr><th>Desde (km)</th><th>Hasta (km)</th><th>Tarifa (MXN/km)</th></tr></thead><tbody>'+tiers+'</tbody></table><p class="warn" id="tier-warn" hidden>Los tramos deben ir de menor a mayor, empezando en 0.</p></div>'+
+     '<div class="panel"><h2>Factor por tipo de trazo</h2><div class="scroll"><table class="tbl"><thead><tr><th>Trazo</th><th>Factor</th><th>Descripción</th></tr></thead><tbody>'+factorRows(a.terr,"terr")+'</tbody></table></div></div>'+
+     '<div class="panel"><h2>Factor por resolución (GSD)</h2><div class="scroll"><table class="tbl"><thead><tr><th>Resolución</th><th>Factor</th><th>Descripción</th></tr></thead><tbody>'+factorRows(a.gsd,"gsd")+'</tbody></table></div></div>'+
+   '</div></div>'+
+   '<div class="panel" style="margin-bottom:16px"><h2>Ancho de franja y rendimiento</h2><p class="hint">El ancho nominal sirve para estimar la superficie cubierta. Los km por día fijan los días de campo: una franja más ancha requiere más pases y rinde menos.</p><div class="scroll"><table class="tbl"><thead><tr><th>Franja</th><th>Factor</th><th>Ancho (m)</th><th>km/día</th><th>Descripción</th></tr></thead><tbody>'+fr+'</tbody></table></div></div>'+
+   '<div class="panel"><h2>Entregables y servicios adicionales</h2><p class="hint">El ortomosaico, el MDS y el MDT están incluidos en el levantamiento base.</p><div class="scroll"><table class="tbl"><thead><tr><th>Concepto</th><th>Cobro</th><th>Precio (MXN)</th><th>Descripción</th></tr></thead><tbody>'+adds+'</tbody></table></div></div>'+
+   '<div class="panel"><h2>Condiciones comerciales</h2><p class="hint">Una condición por línea. Aparecen al pie de cada cotización.</p><div class="field" style="margin-bottom:0"><label for="v-cond" class="lbl">Texto</label><textarea id="v-cond" rows="8" data-bind="a.cond">'+esc(a.cond)+'</textarea></div></div>'+
+   '<div class="panel"><button type="button" class="btn" id="btn-reset">Restaurar valores de referencia</button></div>';
+}
+function updateAjustes(){
+  var T=S.a.tiers, ok = (+T[0].d===0);
+  T.forEach(function(t,i){
+    var el=$("#hasta-"+i); if(!el) return;
+    if(i<T.length-1){ el.textContent = num.format(+T[i+1].d||0); if((+T[i+1].d)<=(+t.d)) ok=false; }
+    else el.textContent="en adelante";
+  });
+  var w=$("#tier-warn"); if(w) w.hidden=ok;
+}
+
+/* ---------- enlace de campos ---------- */
+function setPath(path, val){
+  var parts=path.split("."), obj=S[parts[0]];
+  for(var i=1;i<parts.length-1;i++) obj=obj[parts[i]];
+  obj[parts[parts.length-1]]=val;
+}
+document.addEventListener("input", onChange);
+document.addEventListener("change", onChange);
+function onChange(e){
+  var el=e.target; if(!el.dataset || !el.dataset.bind) return;
+  var t=el.dataset.type, v;
+  if(t==="bool") v=el.checked;
+  else if(t==="number"){ v=parseFloat(el.value); if(!isFinite(v)) v=0; }
+  else if(t==="int") v=parseInt(el.value,10)||0;
+  else v=el.value;
+  setPath(el.dataset.bind, v);
+  var inAjustes = el.dataset.bind.indexOf("q.")!==0 && !(/^a\.sizes/.test(el.dataset.bind));
+  persist();
+  if(inAjustes) renderForm();
+  refresh();
+}
+document.addEventListener("click", function(e){
+  var t=e.target, chip=t.closest && t.closest(".chip[data-len]");
+  if(chip){ S.q.len=+chip.dataset.len; var f=$("#f-len"); if(f) f.value=S.q.len; persist(); refresh(); return; }
+  if(t.id==="gcp-use"){ S.q.gcp=gcpSug(Math.max(0,+S.q.len||0)); var g=$("#f-gcp"); if(g) g.value=S.q.gcp; persist(); refresh(); return; }
+  var tab=t.closest && t.closest("nav.tabs button");
+  if(tab){ showView(tab.dataset.view); return; }
+  if(t.id==="btn-reset"){
+    if(t.dataset.armed){
+      var prov=S.a.prov; S.a=clone(DEFAULT_A); S.a.prov=prov;
+      S.q.sel=S.a.adds.map(function(){return false;}); S.q.ti=0; S.q.gi=0; S.q.bi=1;
+      persist(); renderAjustes(); buildTab(); renderForm(); refresh();
+    } else {
+      t.dataset.armed="1"; t.textContent="Confirmar: se perderán tus tarifas editadas";
+      setTimeout(function(){ if(t.isConnected){ delete t.dataset.armed; t.textContent="Restaurar valores de referencia"; } }, 5000);
+    }
+  }
+});
+function showView(v){
+  ["cotizador","tabulador","ajustes"].forEach(function(n){
+    $("#view-"+n).hidden = n!==v;
+    $("#tab-"+n).setAttribute("aria-selected", n===v ? "true":"false");
+  });
+  $("#bar").style.display = (v==="cotizador") ? "" : "none";
+}
+$("#btn-print").addEventListener("click", function(){ showView("cotizador"); try{ window.print(); }catch(e){} });
+$("#bar-go").addEventListener("click", function(){ $("#sheet").scrollIntoView({behavior:"smooth", block:"start"}); });
+$("#btn-new").addEventListener("click", function(){
+  var keep=S.q.folio;
+  S.q=newQuote();
+  var m=/^(.*?)(\d+)$/.exec(keep||"");
+  if(m){ S.q.folio = m[1]+String(parseInt(m[2],10)+1).padStart(m[2].length,"0"); }
+  persist(); renderForm(); refresh(); window.scrollTo({top:0});
+});
+
+function refresh(){ renderSheet(); updateTab(); updateAjustes(); markChips(); }
+
+renderForm(); renderAjustes(); buildTab(); refresh(); showView("cotizador");
+})();
+</script>
+</body>
+</html>
